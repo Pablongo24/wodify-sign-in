@@ -9,14 +9,11 @@ https://github.com/thayton/wodify/blob/master/wodify-scraper.py
 """
 import os
 from datetime import datetime, timedelta
-import time
 
-from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from dotenv import load_dotenv
 
 load_dotenv()
 USERNAME = os.environ.get("USERNAME")
@@ -40,11 +37,13 @@ class WodifyScraper:
         login_elem.click()
 
     def switch_to_calendar(self):
-        calendar_elem = self.driver.find_element(by=By.ID, value="AthleteTheme_wtLayoutNormal_block_wtMenu_AthleteTheme_wt67_block_wt37")
+        calendar_elem = self.driver.find_element(by=By.ID,
+                                                 value="AthleteTheme_wtLayoutNormal_block_wtMenu_AthleteTheme_wt67_block_wt37")
         calendar_elem.click()
 
     def change_date_field(self):
-        date_elem = self.driver.find_element(by=By.ID, value='AthleteTheme_wt6_block_wtMainContent_wt9_W_Utils_UI_wt216_block_wtDateInputFrom')
+        date_elem = self.driver.find_element(by=By.ID,
+                                             value='AthleteTheme_wt6_block_wtMainContent_wt9_W_Utils_UI_wt216_block_wtDateInputFrom')
         input_date = datetime.today() + timedelta(5)
         date_elem.clear()
         date_elem.send_keys(input_date.strftime('%m/%d/%Y'))
