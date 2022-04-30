@@ -11,6 +11,13 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      USERNAME: ${{ secrets.USERNAME }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      GMAIL_APP_PW: ${{ secrets.GMAIL_APP_PW }}
+      PABLO_GMAIL: ${{ secrets.PABLO_GMAIL }}
+      ALEX_GMAIL: ${{ secrets.ALEX_GMAIL }}
+      DEBUGGING: True
 
     steps:
     - uses: actions/checkout@v3

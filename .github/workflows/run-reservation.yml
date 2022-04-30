@@ -11,14 +11,21 @@ name: Wodify reservation
 
 on:
   schedule:
-    - cron: '58 13 * * 0,3-6'
+    - cron: '59 13 * * 0,3-6'
 
 permissions:
   contents: read
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      USERNAME: ${{ secrets.USERNAME }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      GMAIL_APP_PW: ${{ secrets.GMAIL_APP_PW }}
+      PABLO_GMAIL: ${{ secrets.PABLO_GMAIL }}
+      ALEX_GMAIL: ${{ secrets.ALEX_GMAIL }}
+      DEBUGGING: False
 
     steps:
     - uses: actions/checkout@v3
