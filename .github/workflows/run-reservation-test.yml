@@ -1,0 +1,35 @@
+# This workflow will test the Wodify reservation workflow.
+# It installs Python dependencies, ChromeDriver and run the reservation
+
+name: Test Wodify reservation
+
+push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+
+    - uses: nanasess/setup-chromedriver@v1
+    - name: Install Chromedriver
+    # Reference: https://github.com/marketplace/actions/setup-chromedriver
+      run: |
+        export DISPLAY=:99
+        chromedriver --url-base=/wd/hub &
+
+    - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Test Wodify reservation
+      run: |
+        source wodify-reserve.sh
