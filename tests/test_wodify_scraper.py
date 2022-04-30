@@ -1,12 +1,15 @@
 from datetime import datetime
-from auto_reserve.wodify_reserve import WodifyScraper
 
 
-def test_init():
-    wodify = WodifyScraper()
+def test_init(wodify):
     assert hasattr(wodify, 'login_page')
     assert hasattr(wodify, 'calendar_page')
     assert hasattr(wodify, 'driver')
+    assert hasattr(wodify, 'reservation_status')
+    assert hasattr(wodify, 'class_time')
+    assert hasattr(wodify, 'class_date')
+    assert hasattr(wodify, 'reservation_return_status')
+    wodify.driver.quit()
 
 
 def test_reserve(wodify):
@@ -26,3 +29,5 @@ def test_reserve(wodify):
     # Test already reserved case.
     wodify.reserve(time_delta=time_delta, class_to_reserve=CLASS_TO_RESERVE)
     assert wodify.reservation_status == 'already reserved'
+
+    wodify.driver.quit()
