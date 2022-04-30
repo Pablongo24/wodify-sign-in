@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 
@@ -15,7 +16,9 @@ def test_init(wodify):
 def test_reserve(wodify):
     # Test reservation for day that isn't open yet
     time_delta = 10  # Reservations only open 5 days in advance
-    wodify.reserve(time_delta=time_delta)
+    wodify.setup_reservation(time_delta=time_delta)
+    time.sleep(5)
+    wodify.make_reservation()
     assert wodify.reservation_status == 'cannot reserve'
 
     # Test reservation success. Use Sunday since it always has availability.
@@ -23,11 +26,15 @@ def test_reserve(wodify):
     CLASS_TO_RESERVE = 'Open Gym: 8:00 AM - 4:00 PM'
     today = datetime.today()
     time_delta = SUNDAY_DAY_OF_WEEK - today.weekday()
-    wodify.reserve(time_delta=time_delta, class_to_reserve=CLASS_TO_RESERVE)
+    wodify.setup_reservation(time_delta=time_delta)
+    time.sleep(5)
+    wodify.make_reservation(class_time=CLASS_TO_RESERVE)
     assert wodify.reservation_status == 'success'
 
     # Test already reserved case.
-    wodify.reserve(time_delta=time_delta, class_to_reserve=CLASS_TO_RESERVE)
+    wodify.setup_reservation(time_delta=time_delta)
+    time.sleep(5)
+    wodify.make_reservation(class_time=CLASS_TO_RESERVE)
     assert wodify.reservation_status == 'already reserved'
 
     wodify.driver.quit()

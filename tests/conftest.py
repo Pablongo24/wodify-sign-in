@@ -4,7 +4,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from auto_reserve.wodify_reserve import WodifyScraper
+from auto_reserve import WodifyScraper
 
 
 @pytest.fixture()

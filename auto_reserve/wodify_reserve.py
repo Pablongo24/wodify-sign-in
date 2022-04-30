@@ -9,7 +9,7 @@ https://github.com/thayton/wodify/blob/master/wodify-scraper.py
 """
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -18,7 +18,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from .send_email_confirmation import send_email
+from auto_reserve.send_email_confirmation import send_email
 
 load_dotenv()
 
@@ -129,7 +129,7 @@ class WodifyScraper:
             self.reservation_status = 'there was a problem'
             return True
 
-    def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
+    def setup_reservation(self, time_delta=5):
         """Main runner of all methods.
 
         Sets an implicit wait in case DOM elements take a long time to load.
@@ -140,8 +140,25 @@ class WodifyScraper:
         self.switch_to_calendar()
         input_date = datetime.today() + timedelta(time_delta)
         self.change_date_field(input_date=input_date)
-        time.sleep(5)
-        self.make_reservation(class_time=class_to_reserve)
+
+
+def sleep_until_2_pm():
+    """Check if current time is between 1:59 and 2:01pm.
+
+    This is specific to this project, since CFUS Wodify class reservation opens at exactly 2pm.
+    This process is intended to run in Github actions, where runners may be delayed if there
+    is high demand for workflows, which typically happens at the start of every hour, per
+    https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+
+    Thus, I will kick off this workflow at 1:59pm and check how many seconds until 2:00pm before
+    trying to make the reservation.
+    """
+    current_time = datetime.today()
+    two_pm = datetime.strptime('1400', '%H%M').time()
+    if 13 < current_time.hour < 14:
+        two_pm_today = datetime.combine(date.today(), two_pm)
+        sleep = two_pm_today - datetime.today()
+        time.sleep(int(sleep.seconds))
 
 
 if __name__ == '__main__':
@@ -157,9 +174,13 @@ if __name__ == '__main__':
         today_day_of_week = datetime.today().weekday()
         days_delta = SUNDAY_DAY_OF_WEEK - today_day_of_week
         CLASS_TO_RESERVE = 'Open Gym: 8:00 AM - 4:00 PM'
-        wodify.reserve(time_delta=days_delta, class_to_reserve=CLASS_TO_RESERVE)
+        wodify.setup_reservation(time_delta=days_delta)
+        time.sleep(5)
+        wodify.make_reservation(class_time=CLASS_TO_RESERVE)
     else:
-        wodify.reserve()
+        wodify.setup_reservation()
+        sleep_until_2_pm()
+        wodify.make_reservation()
         EMAIL_ALEX = True
 
     reservation_status = wodify.reservation_return_status['status']
@@ -170,3 +191,5 @@ if __name__ == '__main__':
                class_date=reservation_date,
                class_time=reservation_time,
                email_alex=EMAIL_ALEX)
+
+    wodify.driver.quit()
