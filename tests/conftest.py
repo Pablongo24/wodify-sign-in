@@ -9,7 +9,7 @@ from auto_reserve import WodifyScraper
 
 @pytest.fixture()
 def wodify(chromedriver_path):
-    wodify_instance = WodifyScraper(chromedriver_path=chromedriver_path)
+    wodify_instance = WodifyScraper()
     return wodify_instance
 
 

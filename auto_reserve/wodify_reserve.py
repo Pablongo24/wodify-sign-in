@@ -18,7 +18,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.utils import ChromeType
 
 from auto_reserve.send_email_confirmation import send_email
 
@@ -38,10 +37,10 @@ class WodifyScraper:
         Selenium ChromeDriver
     """
 
-    def __init__(self, chromedriver_path):
+    def __init__(self):
         self.login_page = 'https://app.wodify.com/SignIn/Login?OriginalURL=&RequiresConfirm=false'
         self.calendar_page = 'https://app.wodify.com/Schedule/CalendarListViewEntry.aspx'
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()))
+        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         self.reservation_status = None
         self.class_time = None
         self.class_date = datetime.today()
@@ -166,11 +165,9 @@ def sleep_until_2_pm():
 if __name__ == '__main__':
     DEBUGGING = os.environ.get("DEBUGGING")
     SUNDAY_DAY_OF_WEEK = 6  # Sunday is index 6 in `weekday()`
-    # TODO: change the Service path to run in Github Actions runner.
-    CHROMEDRIVER_EXECUTABLE = '/Users/pablo.vega-behar/Desktop/chromedriver'
     EMAIL_ALEX = False
 
-    wodify = WodifyScraper(chromedriver_path=CHROMEDRIVER_EXECUTABLE)
+    wodify = WodifyScraper()
 
     if DEBUGGING:
         today_day_of_week = datetime.today().weekday()
