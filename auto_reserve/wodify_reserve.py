@@ -8,16 +8,17 @@ References
 https://github.com/thayton/wodify/blob/master/wodify-scraper.py
 """
 import os
+import time
 from datetime import datetime, timedelta
 
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
-from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-# from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from send_email_confirmation import send_email
+
+from .send_email_confirmation import send_email
 
 load_dotenv()
 
@@ -33,10 +34,9 @@ class WodifyScraper:
         URL for the Wodify calendar. This page contains the class schedule.
     driver : ChromeDriver object
         Selenium ChromeDriver
-        # TODO: change the Service path to run in Github Actions runner.
-
     """
-    def __init__(self, chromedriver_path=None):
+
+    def __init__(self, chromedriver_path):
         self.login_page = 'https://app.wodify.com/SignIn/Login?OriginalURL=&RequiresConfirm=false'
         self.calendar_page = 'https://app.wodify.com/Schedule/CalendarListViewEntry.aspx'
         self.driver = webdriver.Chrome(service=Service(chromedriver_path))
@@ -106,11 +106,11 @@ class WodifyScraper:
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}):
             self.reservation_status = 'already reserved'
-            return
+            return True
 
         if reserve_link.find('svg', {'class': 'icon-calendar--disabled'}):
             self.reservation_status = 'cannot reserve'
-            return
+            return True
 
         element_was_clickable = False
         if reserve_link.find('svg', {'class': 'icon-calendar'}):
@@ -123,11 +123,11 @@ class WodifyScraper:
         reserve_link = self.get_reserve_link(class_time)
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}) and element_was_clickable:
-            self.reservation_status = 'reserved'
-            return
+            self.reservation_status = 'success'
+            return True
         else:
             self.reservation_status = 'there was a problem'
-            return
+            return True
 
     def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
         """Main runner of all methods.
@@ -140,14 +140,14 @@ class WodifyScraper:
         self.switch_to_calendar()
         input_date = datetime.today() + timedelta(time_delta)
         self.change_date_field(input_date=input_date)
-        reservation_status = self.make_reservation(class_time=class_to_reserve)
-
-        return self.reservation_return_status(reservation_status)
+        time.sleep(5)
+        self.make_reservation(class_time=class_to_reserve)
 
 
 if __name__ == '__main__':
     DEBUGGING = os.environ.get("DEBUGGING")
     SUNDAY_DAY_OF_WEEK = 6  # Sunday is index 6 in `weekday()`
+    # TODO: change the Service path to run in Github Actions runner.
     CHROMEDRIVER_EXECUTABLE = '/Users/pablo.vega-behar/Desktop/chromedriver'
     EMAIL_ALEX = False
 
@@ -157,9 +157,16 @@ if __name__ == '__main__':
         today_day_of_week = datetime.today().weekday()
         days_delta = SUNDAY_DAY_OF_WEEK - today_day_of_week
         CLASS_TO_RESERVE = 'Open Gym: 8:00 AM - 4:00 PM'
-        reservation = wodify.reserve(time_delta=days_delta, class_to_reserve=CLASS_TO_RESERVE)
+        wodify.reserve(time_delta=days_delta, class_to_reserve=CLASS_TO_RESERVE)
     else:
-        reservation = wodify.reserve()
+        wodify.reserve()
         EMAIL_ALEX = True
 
-    send_email(successful_reservation=reservation, email_alex=EMAIL_ALEX)
+    reservation_status = wodify.reservation_return_status['status']
+    reservation_date = wodify.class_date
+    reservation_time = wodify.class_time
+
+    send_email(reservation_status=reservation_status,
+               class_date=reservation_date,
+               class_time=reservation_time,
+               email_alex=EMAIL_ALEX)

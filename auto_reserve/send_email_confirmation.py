@@ -14,11 +14,11 @@ port = 465  # for SSL
 context = ssl.create_default_context()
 
 
-def send_email(successful_reservation, email_pablo=True, email_alex=False):
+def send_email(reservation_status, class_date, class_time, email_pablo=True, email_alex=False):
     """Send email alert, whether reservation was successful or not."""
-    success_email_subject = 'You have a new Wodify class reservation'
+    success_email_subject = f'Wodify class reserved for {class_date.strftime("%m/%d/%Y")}'
     success_email_body = MIMEText(
-            f"You have a class reservation for {datetime.today().strftime('%m/%d/%Y')}.\n"
+            f"The {class_time} class has been reserved for {class_date.strftime('%m/%d/%Y')}.\n"
             f"Double check your reservation at: https://app.wodify.com/"
         )
     failure_email_subject = 'Your Wodify class reservation failed'
@@ -27,7 +27,7 @@ def send_email(successful_reservation, email_pablo=True, email_alex=False):
         'if you\'re already registered.'
     )
 
-    if successful_reservation:
+    if reservation_status:
         email_subject = success_email_subject
         email_body = success_email_body
     else:
@@ -57,4 +57,4 @@ def send_email(successful_reservation, email_pablo=True, email_alex=False):
 
 
 if __name__ == '__main__':
-    send_email(True)
+    send_email(reservation_status='success', class_time='Open Gym: 8:00 AM - 4:00 PM', class_date=datetime.today())
