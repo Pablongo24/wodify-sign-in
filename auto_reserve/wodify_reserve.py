@@ -43,7 +43,14 @@ class WodifyScraper:
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         self.reservation_status = None
         self.class_time = None
-        self.class_date = datetime.today()
+        self.class_date = None
+        self.reservation_return_status = {
+            'status': self.reservation_status,
+            'class_time': self.class_time,
+            'class_date': self.class_date
+        }
+
+    def _update_return_status(self):
         self.reservation_return_status = {
             'status': self.reservation_status,
             'class_time': self.class_time,
@@ -88,9 +95,9 @@ class WodifyScraper:
         date_elem.send_keys(input_date.strftime('%m/%d/%Y'))
         date_elem.send_keys(Keys.RETURN)
 
-    def get_reserve_link(self, class_time):
+    def get_reserve_link(self):
         soup = BeautifulSoup(self.driver.page_source, features='html.parser')
-        span = soup.find('span', attrs={'title': class_time})
+        span = soup.find('span', attrs={'title': self.class_time})
         tr = span.parent.parent.parent
         reserve_link = tr.find('a', attrs={'href': '#'})
         return reserve_link
@@ -103,14 +110,17 @@ class WodifyScraper:
         class_time : str or datetime object
             If str: expected format '6:00 AM'
         """
-        reserve_link = self.get_reserve_link(class_time)
+        self.class_time = class_time
+        reserve_link = self.get_reserve_link()
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}):
             self.reservation_status = 'already reserved'
+            self._update_return_status()
             return True
 
         if reserve_link.find('svg', {'class': 'icon-calendar--disabled'}):
             self.reservation_status = 'cannot reserve'
+            self._update_return_status()
             return True
 
         element_was_clickable = False
@@ -121,13 +131,15 @@ class WodifyScraper:
             element_was_clickable = True
 
         self.driver.refresh()
-        reserve_link = self.get_reserve_link(class_time)
+        reserve_link = self.get_reserve_link()
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}) and element_was_clickable:
             self.reservation_status = 'success'
+            self._update_return_status()
             return True
         else:
             self.reservation_status = 'there was a problem'
+            self._update_return_status()
             return True
 
     def setup_reservation(self, time_delta=5):
@@ -140,6 +152,7 @@ class WodifyScraper:
         self.login()
         self.switch_to_calendar()
         input_date = datetime.today() + timedelta(time_delta)
+        self.class_date = input_date
         self.change_date_field(input_date=input_date)
 
 
@@ -182,6 +195,8 @@ if __name__ == '__main__':
         wodify.make_reservation()
         EMAIL_ALEX = True
 
+    wodify.driver.quit()
+
     reservation_status = wodify.reservation_return_status['status']
     reservation_date = wodify.class_date
     reservation_time = wodify.class_time
@@ -190,5 +205,3 @@ if __name__ == '__main__':
                class_date=reservation_date,
                class_time=reservation_time,
                email_alex=EMAIL_ALEX)
-
-    wodify.driver.quit()
