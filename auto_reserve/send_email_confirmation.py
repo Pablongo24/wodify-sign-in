@@ -23,7 +23,8 @@ def send_email(successful_reservation, email_pablo=True, email_alex=False):
         )
     failure_email_subject = 'Your Wodify class reservation failed'
     failure_email_body = MIMEText(
-        'The registration failed. Please check https://app.wodify.com/" to find out why.'
+        'The registration failed. Please check https://app.wodify.com/" to reserve manually or check '
+        'if you\'re already registered.'
     )
 
     if successful_reservation:

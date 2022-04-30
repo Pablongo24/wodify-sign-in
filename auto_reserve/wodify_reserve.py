@@ -61,7 +61,7 @@ class WodifyScraper:
         calendar_elem = self.driver.find_element(by=By.ID, value=calendar_elem_id)
         calendar_elem.click()
 
-    def change_date_field(self, time_delta=5):
+    def change_date_field(self, input_date=datetime.today()):
         """Select the date for class sign up.
 
         When you arrive in the calendar page, the default view is today's date.
@@ -70,17 +70,23 @@ class WodifyScraper:
 
         Parameters
         ----------
-        time_delta : int
-            Number of days from today's date to jump forward in the calendar.
+        input_date : datetime
+            Calendar date for class reservation.
         """
         date_elem_id = 'AthleteTheme_wt6_block_wtMainContent_wt9_W_Utils_UI_wt216_block_wtDateInputFrom'
         date_elem = self.driver.find_element(by=By.ID, value=date_elem_id)
-        input_date = datetime.today() + timedelta(time_delta)
         date_elem.clear()
         date_elem.send_keys(input_date.strftime('%m/%d/%Y'))
         date_elem.send_keys(Keys.RETURN)
 
-    def make_reservation(self, class_time='6:00 AM'):
+    def get_reserve_link(self, class_time):
+        soup = BeautifulSoup(self.driver.page_source, features='html.parser')
+        span = soup.find('span', attrs={'title': class_time})
+        tr = span.parent.parent.parent
+        reserve_link = tr.find('a', attrs={'href': '#'})
+        return reserve_link
+
+    def make_reservation(self, class_time='WOD 6:00 AM'):
         """Reserve a class_time in the calendar list view.
 
         Parameters
@@ -88,22 +94,30 @@ class WodifyScraper:
         class_time : str or datetime object
             If str: expected format '6:00 AM'
         """
-        soup = BeautifulSoup(self.driver.page_source, features='html.parser')
-        span = soup.find('span', attrs={'title': class_time})
-        tr = span.parent.parent.parent
-        reserve_link = tr.find('a', attrs={'href': '#'})
+        reserve_link = self.get_reserve_link(class_time)
 
         element_was_clickable = False
 
         if reserve_link.find('svg', {'class': 'icon-calendar'}):
-            reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.attrs['id'])
+            reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.next.attrs['id'])
             reserve_elem.click()
+
             element_was_clickable = True
+
+        self.driver.refresh()
+        reserve_link = self.get_reserve_link(class_time)
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}) and element_was_clickable:
             return True
 
         return False
+
+    def reservation_return_status(self, reservation_status, class_time, class_date):
+        return {
+            'status': reservation_status,
+            'class_time': class_time,
+            'class_date': class_date
+        }
 
     def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
         """Main runner of all methods.
@@ -114,10 +128,11 @@ class WodifyScraper:
         self.driver.implicitly_wait(1)  #
         self.login()
         self.switch_to_calendar()
-        self.change_date_field(time_delta=time_delta)
-        class_reserved = self.make_reservation(class_time=class_to_reserve)
+        input_date = datetime.today() + timedelta(time_delta)
+        self.change_date_field(input_date=input_date)
+        reservation_status = self.make_reservation(class_time=class_to_reserve)
 
-        return class_reserved
+        # return self.reservation_return_status(reservation_status, class_date=)
 
 
 if __name__ == '__main__':
@@ -137,5 +152,4 @@ if __name__ == '__main__':
         reservation = wodify.reserve()
         EMAIL_ALEX = True
 
-    if reservation:
-        send_email(reservation, email_alex=EMAIL_ALEX)
+    send_email(successful_reservation=reservation, email_alex=EMAIL_ALEX)
