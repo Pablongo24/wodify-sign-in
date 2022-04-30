@@ -40,6 +40,14 @@ class WodifyScraper:
         self.login_page = 'https://app.wodify.com/SignIn/Login?OriginalURL=&RequiresConfirm=false'
         self.calendar_page = 'https://app.wodify.com/Schedule/CalendarListViewEntry.aspx'
         self.driver = webdriver.Chrome(service=Service(chromedriver_path))
+        self.reservation_status = None
+        self.class_time = None
+        self.class_date = datetime.today()
+        self.reservation_return_status = {
+            'status': self.reservation_status,
+            'class_time': self.class_time,
+            'class_date': self.class_date
+        }
 
     def login(self):
         """Log-in to the web app.
@@ -96,8 +104,15 @@ class WodifyScraper:
         """
         reserve_link = self.get_reserve_link(class_time)
 
-        element_was_clickable = False
+        if reserve_link.find('svg', {'class': 'icon-ticket'}):
+            self.reservation_status = 'already reserved'
+            return
 
+        if reserve_link.find('svg', {'class': 'icon-calendar--disabled'}):
+            self.reservation_status = 'cannot reserve'
+            return
+
+        element_was_clickable = False
         if reserve_link.find('svg', {'class': 'icon-calendar'}):
             reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.next.attrs['id'])
             reserve_elem.click()
@@ -108,16 +123,11 @@ class WodifyScraper:
         reserve_link = self.get_reserve_link(class_time)
 
         if reserve_link.find('svg', {'class': 'icon-ticket'}) and element_was_clickable:
-            return True
-
-        return False
-
-    def reservation_return_status(self, reservation_status, class_time, class_date):
-        return {
-            'status': reservation_status,
-            'class_time': class_time,
-            'class_date': class_date
-        }
+            self.reservation_status = 'reserved'
+            return
+        else:
+            self.reservation_status = 'there was a problem'
+            return
 
     def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
         """Main runner of all methods.
@@ -132,7 +142,7 @@ class WodifyScraper:
         self.change_date_field(input_date=input_date)
         reservation_status = self.make_reservation(class_time=class_to_reserve)
 
-        # return self.reservation_return_status(reservation_status, class_date=)
+        return self.reservation_return_status(reservation_status)
 
 
 if __name__ == '__main__':
