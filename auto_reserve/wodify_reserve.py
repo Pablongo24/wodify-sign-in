@@ -92,9 +92,18 @@ class WodifyScraper:
         span = soup.find('span', attrs={'title': class_time})
         tr = span.parent.parent.parent
         reserve_link = tr.find('a', attrs={'href': '#'})
-        reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.attrs['id'])
-        reserve_elem.click()
-        return True
+
+        element_was_clickable = False
+
+        if reserve_link.find('svg', {'class': 'icon-calendar'}):
+            reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.attrs['id'])
+            reserve_elem.click()
+            element_was_clickable = True
+
+        if reserve_link.find('svg', {'class': 'icon-ticket'}) and element_was_clickable:
+            return True
+
+        return False
 
     def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
         """Main runner of all methods.
