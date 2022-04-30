@@ -14,18 +14,28 @@ port = 465  # for SSL
 context = ssl.create_default_context()
 
 
-def send_email(email_pablo=True, email_alex=False):
+def send_email(successful_reservation, email_pablo=True, email_alex=False):
+    """Send email alert, whether reservation was successful or not."""
+    if successful_reservation:
+        email_subject = 'You have a new Wodify class reservation'
+        email_body = MIMEText(
+            f"You have a class reservation for {datetime.today().strftime('%m/%d/%Y')}.\n"
+            f"Double check your reservation at: https://app.wodify.com/"
+        )
+    else:
+        email_subject = 'Your Wodify class reservation failed'
+        email_body = MIMEText(
+            'The registration failed. Please check https://app.wodify.com/" to find out why.'
+        )
+
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
         server.login(os.environ.get("PABLO_GMAIL"), password=os.environ.get("GMAIL_APP_PW"))
 
         pablo_gmail = os.environ.get("PABLO_GMAIL")
         alex_gmail = os.environ.get("ALEX_GMAIL")
-        message = MIMEText(
-            f"You have a class reservation for {datetime.today().strftime('%m/%d/%Y')}.\n"
-            f"Double check your reservation at: https://app.wodify.com/"
-        )
+        message = email_body
 
-        message['Subject'] = 'You have a new Wodify class reservation'
+        message['Subject'] = email_subject
         message['From'] = pablo_gmail
 
         if email_pablo:
@@ -41,4 +51,4 @@ def send_email(email_pablo=True, email_alex=False):
 
 
 if __name__ == '__main__':
-    send_email()
+    send_email(True)

@@ -14,8 +14,10 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 # from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.keys import Keys
+from send_email_confirmation import send_email
 
 load_dotenv()
 
@@ -31,13 +33,13 @@ class WodifyScraper:
         URL for the Wodify calendar. This page contains the class schedule.
     driver : ChromeDriver object
         Selenium ChromeDriver
-        # TODO: change the executable path to run in Github Actions runner.
+        # TODO: change the Service path to run in Github Actions runner.
 
     """
-    def __init__(self):
+    def __init__(self, chromedriver_path=None):
         self.login_page = 'https://app.wodify.com/SignIn/Login?OriginalURL=&RequiresConfirm=false'
         self.calendar_page = 'https://app.wodify.com/Schedule/CalendarListViewEntry.aspx'
-        self.driver = webdriver.Chrome(executable_path='/Users/pablo.vega-behar/Desktop/chromedriver')
+        self.driver = webdriver.Chrome(service=Service(chromedriver_path))
 
     def login(self):
         """Log-in to the web app.
@@ -78,7 +80,7 @@ class WodifyScraper:
         date_elem.send_keys(input_date.strftime('%m/%d/%Y'))
         date_elem.send_keys(Keys.RETURN)
 
-    def reserve_class(self, class_time='6:00 AM'):
+    def make_reservation(self, class_time='6:00 AM'):
         """Reserve a class_time in the calendar list view.
 
         Parameters
@@ -92,29 +94,39 @@ class WodifyScraper:
         reserve_link = tr.find('a', attrs={'href': '#'})
         reserve_elem = self.driver.find_element(by=By.ID, value=reserve_link.attrs['id'])
         reserve_elem.click()
+        return True
 
     def reserve(self, time_delta=5, class_to_reserve='WOD 6:00 AM'):
+        """Main runner of all methods.
+
+        Sets an implicit wait in case DOM elements take a long time to load.
+        """
         self.driver.get(self.login_page)
-        self.driver.implicitly_wait(2)
+        self.driver.implicitly_wait(1)  #
         self.login()
-        self.driver.implicitly_wait(1)
         self.switch_to_calendar()
-        self.driver.implicitly_wait(1)
         self.change_date_field(time_delta=time_delta)
-        self.driver.implicitly_wait(1)
-        self.reserve_class(class_time=class_to_reserve)
+        class_reserved = self.make_reservation(class_time=class_to_reserve)
+
+        return class_reserved
 
 
 if __name__ == '__main__':
     DEBUGGING = os.environ.get("DEBUGGING")
     SUNDAY_DAY_OF_WEEK = 6  # Sunday is index 6 in `weekday()`
+    CHROMEDRIVER_EXECUTABLE = '/Users/pablo.vega-behar/Desktop/chromedriver'
+    EMAIL_ALEX = False
 
-    wodify = WodifyScraper()
+    wodify = WodifyScraper(chromedriver_path=CHROMEDRIVER_EXECUTABLE)
 
     if DEBUGGING:
         today_day_of_week = datetime.today().weekday()
         days_delta = SUNDAY_DAY_OF_WEEK - today_day_of_week
         CLASS_TO_RESERVE = 'Open Gym: 8:00 AM - 4:00 PM'
-        wodify.reserve(time_delta=days_delta, class_to_reserve=CLASS_TO_RESERVE)
+        reservation = wodify.reserve(time_delta=days_delta, class_to_reserve=CLASS_TO_RESERVE)
     else:
-        wodify.reserve()
+        reservation = wodify.reserve()
+        EMAIL_ALEX = True
+
+    if reservation:
+        send_email(reservation, email_alex=EMAIL_ALEX)
