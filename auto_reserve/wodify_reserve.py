@@ -192,6 +192,7 @@ if __name__ == '__main__':
     else:
         wodify.setup_reservation()
         sleep_until_2_pm()
+        time.sleep(3)
         wodify.make_reservation()
         EMAIL_ALEX = True
 
