@@ -176,7 +176,8 @@ def sleep_until_2_pm():
 
 
 if __name__ == '__main__':
-    DEBUGGING = os.environ.get("DEBUGGING")
+#     DEBUGGING = os.environ.get("DEBUGGING")
+    DEBUGGING = False  # Set manually to check issues in Github Actions
     SUNDAY_DAY_OF_WEEK = 6  # Sunday is index 6 in `weekday()`
     EMAIL_ALEX = False
 
