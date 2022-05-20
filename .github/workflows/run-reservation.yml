@@ -11,7 +11,7 @@ name: Wodify reservation
 
 on:
   schedule:
-    - cron: '59 17 * * 0,3-6'  # This is UTC time, so 2pm ET
+    - cron: '57 17 * * 0,3-6'  # This is UTC time, so 2pm ET
 
 permissions:
   contents: read
